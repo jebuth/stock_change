@@ -3,7 +3,6 @@ import DatePicker from "react-datepicker";
 //import Button from 'react-bootstrap/Button';
 import { Button } from 'semantic-ui-react';
 import { Input } from 'semantic-ui-react'
-
 // material table 
 import { makeStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
@@ -13,6 +12,8 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
+
+const axios = require('axios').default;
 
 const useStyles = makeStyles({
     table: {
@@ -35,6 +36,19 @@ export default class Form extends React.Component{
             percentChange: 0,
             tickerRecords: []
         };
+
+        let savedTickers = JSON.parse(localStorage.getItem('tickerRecords'));
+        debugger;
+        if(savedTickers != null){
+            this.state.tickerRecords = savedTickers;
+            this.state.sDate = savedTickers[0].sDate;
+            this.state.eDate = savedTickers[0].eDate;
+            this.state.tsDate = savedTickers[0].tsDate;
+            this.state.teDate = savedTickers[0].teDate;
+            this.state.dataLoaded = true;
+        }
+        
+        debugger;
     }
 
     handleChangeTicker = ticker => {
@@ -64,22 +78,110 @@ export default class Form extends React.Component{
         });
     };
 
-    // submit = () =>{
     submit = () => {    
-        const axios = require('axios').default;
 
-        axios
-        .get(`https://cors-anywhere.herokuapp.com/https://api.tiingo.com/tiingo/daily/${this.state.ticker}/prices?token=ef09ed6da5356e421f5d39c0a98922744b5fc79b`)
+        debugger;
+
+        //if records exist 
+        if(this.state.tickerRecords.length > 0){
+            // if the current request's dates are different from the existing records
+            if(this.state.tickerRecords[0].sDate !== this.state.sDate || this.state.tickerRecords[0].eDate !== this.state.eDate){
+                // some modal prompt yes/no
+                // **if they chose no then make sure state has correct dates. DatePicker will set date onChange
+
+                // update entire table with new dates
+                this.updateAllDateRanges();    
+            }
+            // subsequent calls with same dateRanges
+            else{
+                this.sendRequest();
+            }
+        }
+        // initial call / this.state.tickerRecords null
+        else{
+            this.sendRequest();
+        }
+        //this.sendRequest();
+    }
+
+    //update all records with new dateranges
+    updateAllDateRanges = () => {
+        // clear storage. maybe do this after successfull request.
+       // Storage.clear();
+
+        let newTickerRecords = [];
+
+        let self = this;
+        // loop tickerRecords to get each ticker
+        this.state.tickerRecords.forEach(function(item){
+            axios.get(`https://cors-anywhere.herokuapp.com/https://api.tiingo.com/tiingo/daily/${item.ticker}/prices?token=ef09ed6da5356e421f5d39c0a98922744b5fc79b`)
+            .then(response => {
+
+                debugger;
+
+                // save currentPrice in state to access in next promise. maybe we don't have to.
+                self.setState({ currentPrice: response.data[0].close });
+                return axios.get(`https://cors-anywhere.herokuapp.com/https://api.tiingo.com/tiingo/daily/${item.ticker}/prices?startDate=${self.state.tsDate}&endDate=${self.state.teDate}&format=json&resampleFreq=weekly&token=ef09ed6da5356e421f5d39c0a98922744b5fc79b`);
+            })
+            .then(response=> {
+                debugger;
+
+                let avg = 0;
+                let sum= 0;
+                // will execute when we get response from tingo
+                response.data.forEach(function(item){
+                    avg = (parseInt(item.high) + parseInt(item.low)) / parseInt(2);
+                    sum += avg;
+                    console.log('high: ' + item.high);
+                    console.log('low: ' + item.low);
+                    console.log('sum: ' + item.high + item.low);
+                    console.log('avg: ' + avg);
+                })
+                
+                let totalAvg = (sum /  response.data.length).toFixed(4);
+    
+                let diff, percentChange = 0;
+                
+                diff = self.state.currentPrice - totalAvg;
+                percentChange = (diff / (parseInt(totalAvg)) * 100).toFixed(4);
+            
+                let record = {
+                    ticker : item.ticker,
+                    totalAvg : totalAvg,
+                    currentPrice : self.state.currentPrice,
+                    percentChange : percentChange,
+                    sDate : self.state.sDate,
+                    eDate : self.state.eDate,
+                    tsDate : self.state.tsDate,
+                    teDate: self.state.teDate
+                };
+
+                newTickerRecords.push(record);
+            })
+            
+        });
+
+        // clear storage
+        //localStorage.clear();
+        // save new tickerRecords in state and localstorage
+        this.setState({tickerRecords: newTickerRecords});
+        localStorage.setItem('tickerRecords', newTickerRecords);
+    }
+
+
+    sendRequest = () => {
+        
+        axios.get(`https://cors-anywhere.herokuapp.com/https://api.tiingo.com/tiingo/daily/${this.state.ticker}/prices?token=ef09ed6da5356e421f5d39c0a98922744b5fc79b`)
         .then(response => {
             this.setState({ currentPrice: response.data[0].close });
             return axios.get(`https://cors-anywhere.herokuapp.com/https://api.tiingo.com/tiingo/daily/${this.state.ticker}/prices?startDate=${this.state.tsDate}&endDate=${this.state.teDate}&format=json&resampleFreq=weekly&token=ef09ed6da5356e421f5d39c0a98922744b5fc79b`);
         })
-        .then(response=> {
+        .then(response => {
             let avg = 0;
             let sum= 0;
             // will execute when we get response from tingo
             response.data.forEach(function(item){
-                avg = (parseInt(item.high) + parseInt(item.low)) / parseInt(2);
+                avg = (parseFloat(item.high) + parseFloat(item.low)) / parseFloat(2);
                 sum += avg;
                 console.log('high: ' + item.high);
                 console.log('low: ' + item.low);
@@ -92,17 +194,22 @@ export default class Form extends React.Component{
             let diff, percentChange = 0;
             
             diff = this.state.currentPrice - totalAvg;
-            percentChange = (diff / (parseInt(totalAvg)) * 100).toFixed(4);
+            percentChange = (diff / (parseFloat(totalAvg)) * 100).toFixed(4);
         
             let record = {
                 ticker : this.state.ticker,
                 totalAvg : totalAvg,
                 currentPrice : this.state.currentPrice,
-                percentChange : percentChange
+                percentChange : percentChange,
+                sDate : this.state.sDate,
+                eDate : this.state.eDate,
+                tsDate : this.state.tsDate,
+                teDate: this.state.teDate
             };
 
             debugger;
             let tickerRecords = this.state.tickerRecords;
+            
             tickerRecords.push(record);
 
             this.setState({
@@ -113,11 +220,14 @@ export default class Form extends React.Component{
                 });
 
             debugger;
+
+            localStorage.setItem('tickerRecords', JSON.stringify(this.state.tickerRecords));
         })
         .catch(error => {
             console.log(error);
         });
     }
+    
 
     render(){
         if(this.state.dataLoaded){
