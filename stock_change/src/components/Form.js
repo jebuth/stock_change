@@ -12,6 +12,8 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
+// datepicker
+import {DateRangeInput, DateSingleInput, Datepicker} from '@datepicker-react/styled'
 
 const axios = require('axios').default;
 
@@ -21,7 +23,7 @@ const useStyles = makeStyles({
     },
   });
 
-export default class Form extends React.Component{
+export default function Form {
     constructor(props){
         super(props);
         this.state={
