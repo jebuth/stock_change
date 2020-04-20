@@ -1,5 +1,6 @@
 import React from 'react';
 import Form from './components/Form';
+import FunctionalForm from './components/FunctionalForm';
 import './App.css';
 import "react-datepicker/dist/react-datepicker.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -7,7 +8,8 @@ import 'semantic-ui-css/semantic.min.css';
 
 function App() {
   return (
-    <Form></Form>
+    // <Form></Form>
+    <FunctionalForm></FunctionalForm>
   );
 }
 

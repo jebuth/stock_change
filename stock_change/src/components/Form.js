@@ -23,7 +23,7 @@ const useStyles = makeStyles({
     },
   });
 
-export default function Form {
+export default class Form extends React.Component {
     constructor(props){
         super(props);
         this.state={
@@ -172,6 +172,8 @@ export default function Form {
 
 
     sendRequest = () => {
+
+        alert(`payLoad: ${this.state.ticker} \nstartDate: ${this.state.tsDate} \nendDate: ${this.state.teDate}`);
         
         axios.get(`https://cors-anywhere.herokuapp.com/https://api.tiingo.com/tiingo/daily/${this.state.ticker}/prices?token=ef09ed6da5356e421f5d39c0a98922744b5fc79b`)
         .then(response => {
