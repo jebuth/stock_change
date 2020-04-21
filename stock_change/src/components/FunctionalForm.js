@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import { Button } from 'semantic-ui-react';
 import { Input } from 'semantic-ui-react';
 import DatePicker from "react-datepicker";
@@ -12,6 +12,10 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
+
+// datepicker
+import {DateRangeInput, DateSingleInput, Datepicker} from '@datepicker-react/styled'
+//import {Datepicker, START_DATE} from '@datepicker-react/styled'
 
 export default function FunctionalForm()
 {
@@ -30,19 +34,40 @@ export default function FunctionalForm()
     const [tickerRecords, setTickerRecords] = useState([]);
     const [dataLoaded, setDataLoaded] = useState(false);
 
-    // ticker, startdate, end
-    const [payLoad, setPayload] = useState(null);
+
 
     // table styling
     const useStyles = makeStyles({
         table: {
-          minWidth: 650,
+        minWidth: 650,
         },
-      });
+    });
+
+    const initialState = {
+        startDate: null,
+        endDate: null,
+        focusedInput: null,
+    }
+    
+    function reducer(state, action) {
+        switch (action.type) {
+            case 'focusChange':
+            return {...state, focusedInput: action.payload}
+            case 'dateChange':
+            return action.payload
+            default:
+            throw new Error()
+        }
+    }
+    
+
+    const [state, dispatch] = useReducer(reducer, initialState)
+
 
     function sendRequest(){
 
         //alert(`payLoad: ${ticker} \nstartDate: ${startDate} \nendDate: ${endDate}`);
+        alert(`startDate: ${state.startDate} \nendDate: ${endDate}`);
 
         axios.get(`https://cors-anywhere.herokuapp.com/https://api.tiingo.com/tiingo/daily/${ticker}/prices?token=ef09ed6da5356e421f5d39c0a98922744b5fc79b`)
         .then(response => {
@@ -127,25 +152,29 @@ export default function FunctionalForm()
     return (
         <div className="containerBody">
                 <Input focus type="text" onChange={(e) => setTicker(e.target.value.toUpperCase())}></Input>
-                <DatePicker 
+                {/* <DatePicker 
                     selected = {Date.parse(startDate)}
                     onChange = {(e) => { 
-                        
                         let formattedDate = e.toISOString();
                         setStartDate(formattedDate.split('T')[0]);
-                        //setStartDate(Date.parse(e));
-                        
                     }}
                 />
                 <DatePicker
                      selected = {Date.parse(endDate)}
-                    //onChange = {(e) => {setEndDate(e)}}
                     onChange = {(e) => {
                         let formattedDate = e.toISOString();
                         setEndDate(formattedDate.split('T')[0]);
-                        //setStartDate(Date.parse(e));
                     }}
-                />
+                /> */}
+
+                <DateRangeInput
+                    onDatesChange={data => dispatch({type: 'dateChange', payload: data})}
+                    onFocusChange={focusedInput => dispatch({type: 'focusChange', payload: focusedInput})}
+                    startDate={state.startDate} // Date or null
+                    endDate={state.endDate} // Date or null
+                    focusedInput={state.focusedInput} // START_DATE, END_DATE or null
+                    />
+
                 <Button 
                     primary
                     //onClick={this.submit}
